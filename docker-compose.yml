@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres_air
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_air_data:/var/lib/postgresql/data
+    networks:
+      - air_network
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb_air
+    environment:
+      MONGO_INITDB_DATABASE: ${POSTGRES_DB}
+    ports:
+      - "${MONGO_PORT}:27017"
+    volumes:
+      - mongo_air_data:/data/db
+    networks:
+      - air_network
+    restart: unless-stopped
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n_air
+    ports:
+      - "${N8N_PORT}:5678"
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - TZ=${TZ}
+      - N8N_SECURE_COOKIE=false
+    volumes:
+      - n8n_air_data:/home/node/.n8n
+    networks:
+      - air_network
+    restart: unless-stopped
+
+  opensky_fetcher:
+    image: curlimages/curl:latest
+    container_name: opensky_fetcher
+    env_file:
+      - .env
+    volumes:
+      - ./scripts/fetch_opensky.sh:/scripts/fetch_opensky.sh
+    command: ["sh", "/scripts/fetch_opensky.sh"]
+    networks:
+      - air_network
+    depends_on:
+      - n8n
+    restart: unless-stopped
+
+volumes:
+  postgres_air_data:
+  mongo_air_data:
+  n8n_air_data:
+
+networks:
+  air_network:
+    driver: bridge

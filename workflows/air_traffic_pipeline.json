@@ -1,0 +1,387 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "air-traffic",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7bd15c46-3ccc-4db9-849b-5b59bee794d5",
+      "name": "Webhook",
+      "webhookId": "1cc6857e-9de8-4f83-b736-ae3ba5b71f3d"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\n\nconst states = body.states || [];\nconst apiTime = body.time || Math.floor(Date.now() / 1000);\n\nif (!Array.isArray(states) || states.length === 0) {\n  return [{\n    json: {\n      valide: false,\n      type_erreur: \"NO_DATA\",\n      message: \"Aucune donnée avion reçue depuis OpenSky\",\n      source: \"opensky\",\n      date_traitement: new Date().toISOString()\n    }\n  }];\n}\n\n// On limite à 50 avions pour éviter de massacrer n8n/Postgres comme des sauvages\nconst limitedStates = states.slice(0, 50);\n\nreturn limitedStates.map((state) => {\n  const icao24 = state[0];\n  const callsign = state[1] ? String(state[1]).trim() : null;\n  const origin_country = state[2];\n  const longitude = state[5];\n  const latitude = state[6];\n  const altitude = state[7];\n  const velocity = state[9];\n\n  const errors = [];\n\n  if (!icao24) errors.push(\"icao24 manquant\");\n  if (longitude === null || latitude === null) errors.push(\"position manquante\");\n  if (typeof longitude === \"number\" && (longitude < -180 || longitude > 180)) errors.push(\"longitude invalide\");\n  if (typeof latitude === \"number\" && (latitude < -90 || latitude > 90)) errors.push(\"latitude invalide\");\n\n  const valide = errors.length === 0;\n\n  return {\n    json: {\n      icao24,\n      callsign,\n      origin_country,\n      longitude,\n      latitude,\n      altitude,\n      velocity,\n      timestamp_event: new Date(apiTime * 1000).toISOString(),\n      valide,\n      errors,\n      error_message: errors.join(\" | \"),\n      source: \"opensky\",\n      date_traitement: new Date().toISOString()\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "048c4dc9-a270-4a3d-bf34-65b6620770f9",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8765db5e-ecca-4d1e-a4b1-e02972ab43f2",
+              "leftValue": "={{ $json.valide }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "9152a00f-44a6-4745-806e-d46116632d95",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "positions",
+          "mode": "list",
+          "cachedResultName": "positions"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "longitude": "={{ $json.longitude }}",
+            "latitude": "={{ $json.latitude }}",
+            "altitude": "={{ $json.altitude }}",
+            "velocity": "={{ $json.velocity }}",
+            "icao24": "={{ $json.icao24 }}",
+            "callsign": "={{ $json.callsign }}",
+            "origin_country": "={{ $json.origin_country }}",
+            "timestamp_event": "={{ $json.timestamp_event }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "icao24",
+              "displayName": "icao24",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "callsign",
+              "displayName": "callsign",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "origin_country",
+              "displayName": "origin_country",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "longitude",
+              "displayName": "longitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "latitude",
+              "displayName": "latitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "altitude",
+              "displayName": "altitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "velocity",
+              "displayName": "velocity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "timestamp_event",
+              "displayName": "timestamp_event",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "a5f7f2df-506f-424d-91b9-06fb437b43be",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "sUCBK3Quz9YT9huN",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst total = items.length;\n\nconst avgAltitude =\n  items.reduce((s, i) => s + (i.json.altitude || 0), 0) / total;\n\nconst avgVelocity =\n  items.reduce((s, i) => s + (i.json.velocity || 0), 0) / total;\n\nreturn [{\n  json: {\n    total_aircraft: total,\n    avg_altitude: avgAltitude,\n    avg_velocity: avgVelocity\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "79d5f6ca-e930-4901-b1d9-490a5f98eb17",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "traffic_metrics",
+          "mode": "list",
+          "cachedResultName": "traffic_metrics"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "total_aircraft": "={{ $json.total_aircraft }}",
+            "avg_altitude": "={{ $json.avg_altitude }}",
+            "avg_velocity": "={{ $json.avg_velocity }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "total_aircraft",
+              "displayName": "total_aircraft",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_altitude",
+              "displayName": "avg_altitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "avg_velocity",
+              "displayName": "avg_velocity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "metric_time",
+              "displayName": "metric_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1040,
+        -96
+      ],
+      "id": "69154fe6-92ac-44e8-8b99-9c4ffa0c7788",
+      "name": "Insert rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "sUCBK3Quz9YT9huN",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "fbc5824f-d9cf-4080-8907-29b6940945b2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "30861e158bd7b35e013eb68796dde6392b0407f121a2f9136991a382f5d11178"
+  },
+  "nodeGroups": [],
+  "id": "eO4EgxlFAAMndGzZ",
+  "tags": []
+}
