@@ -13,13 +13,17 @@ do
 
   if [ ! -s /tmp/opensky_response.json ]; then
     echo "Réponse vide depuis OpenSky"
-  else
+  elif head -c 1 /tmp/opensky_response.json | grep -q "{"; then
     curl -s -X POST "$N8N_WEBHOOK_URL" \
       -H "Content-Type: application/json" \
       --data-binary @/tmp/opensky_response.json
 
     echo ""
-    echo "Payload envoyé à n8n"
+    echo "Payload JSON envoyé à n8n"
+  else
+    echo "Réponse non JSON reçue depuis OpenSky, envoi ignoré"
+    head -c 100 /tmp/opensky_response.json
+    echo ""
   fi
 
   sleep "$FETCH_INTERVAL"
