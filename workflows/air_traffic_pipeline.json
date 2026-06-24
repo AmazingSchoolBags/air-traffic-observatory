@@ -213,7 +213,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        832,
+        1152,
         -96
       ],
       "id": "79d5f6ca-e930-4901-b1d9-490a5f98eb17",
@@ -299,7 +299,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        1040,
+        1472,
         -96
       ],
       "id": "69154fe6-92ac-44e8-8b99-9c4ffa0c7788",
@@ -310,9 +310,160 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "Logs_Detailles",
+        "fields": "icao24,callsign,origin_country,longitude,latitude,altitude,velocity,timestamp_event,valide",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        880,
+        -96
+      ],
+      "id": "14f2c94c-278b-49ac-8bd4-4607dded37f4",
+      "name": "Insert documents",
+      "credentials": {
+        "mongoDb": {
+          "id": "w5NQBIcpTHm4k4nY",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "Evenements_Rejetes",
+        "fields": "icao24,callsign,origin_country,longitude,latitude,altitude,velocity,timestamp_event,valide,errors,error_message,source,date_traitement",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        96
+      ],
+      "id": "4a338631-4c62-419a-b1b5-7f3748bf7218",
+      "name": "Insert documents1",
+      "credentials": {
+        "mongoDb": {
+          "id": "w5NQBIcpTHm4k4nY",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "qakitv@gmail.com",
+        "toEmail": "qakitv@gmail.com",
+        "subject": "[ALERTE AIR TRAFFIC] Donnée rejetée",
+        "html": "=<h2>✈️ Donnée OpenSky rejetée</h2>\n\n<p><b>ICAO24 :</b> {{$json.icao24}}</p>\n<p><b>Callsign :</b> {{$json.callsign}}</p>\n<p><b>Pays :</b> {{$json.origin_country}}</p>\n<p><b>Longitude :</b> {{$json.longitude}}</p>\n<p><b>Latitude :</b> {{$json.latitude}}</p>\n<p><b>Altitude :</b> {{$json.altitude}}</p>\n<p><b>Vitesse :</b> {{$json.velocity}}</p>\n\n<p><b>Erreur :</b> {{$json.error_message}}</p>\n<p><b>Source :</b> {{$json.source}}</p>\n<p><b>Date traitement :</b> {{$json.date_traitement}}</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        832,
+        96
+      ],
+      "id": "e48ca278-2cbd-4804-adab-1167990eac97",
+      "name": "Send an Email",
+      "webhookId": "0827d57e-e90b-4760-b6b7-62c69373645a",
+      "credentials": {
+        "smtp": {
+          "id": "j9P7OXvHASKg3KlN",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    last_seen: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        -96
+      ],
+      "id": "d5519f41-343c-47d2-882d-c5d846a5061f",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "flux_monitoring",
+          "mode": "list",
+          "cachedResultName": "flux_monitoring"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last_seen": "={{ new Date().toISOString() }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "last_seen",
+              "displayName": "last_seen",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1888,
+        -96
+      ],
+      "id": "c3e680a7-7013-4ec9-8537-335cbac8b4f2",
+      "name": "Insert rows in a table2",
+      "credentials": {
+        "postgres": {
+          "id": "sUCBK3Quz9YT9huN",
+          "name": "Postgres account"
+        }
+      }
     }
   ],
-  "pinData": {},
+  "pinData": {
+    "Code in JavaScript2": [
+      {
+        "json": {
+          "last_seen": "2026-06-24T12:50:00.000Z"
+        }
+      }
+    ]
+  },
   "connections": {
     "Webhook": {
       "main": [
@@ -344,6 +495,13 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Insert documents1",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
@@ -351,7 +509,7 @@
       "main": [
         [
           {
-            "node": "Code in JavaScript1",
+            "node": "Insert documents",
             "type": "main",
             "index": 0
           }
@@ -368,15 +526,59 @@
           }
         ]
       ]
+    },
+    "Insert documents": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert documents1": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "fbc5824f-d9cf-4080-8907-29b6940945b2",
+  "versionId": "1c142008-5f3f-4204-9c48-701f4403208a",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "30861e158bd7b35e013eb68796dde6392b0407f121a2f9136991a382f5d11178"
